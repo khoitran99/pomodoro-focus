@@ -41,6 +41,9 @@ export function AudioPlayer({
     let interval: ReturnType<typeof setInterval>;
 
     const fetchSong = async () => {
+      // Don't poll network or trigger state updates if the tab is hidden
+      if (typeof document !== "undefined" && document.hidden) return;
+
       try {
         const res = await fetch(
           "https://api.laut.fm/station/lofi/current_song",

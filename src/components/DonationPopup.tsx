@@ -24,7 +24,7 @@ export function DonationPopup() {
             </span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md bg-neutral-900 border-white/10 text-white rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-xl bg-neutral-900 border-white/10 text-white rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="text-center sm:text-center space-y-3">
             <DialogTitle className="text-2xl font-light">
               Support KT Focus
@@ -34,17 +34,27 @@ export function DonationPopup() {
               consider buying me a coffee to support future development!
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center p-6 space-y-4">
-            <div className="relative w-64 h-64 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shadow-lg">
+          <div className="flex flex-col items-center justify-center space-y-6 pt-4">
+            <div className="relative w-full max-w-sm aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shadow-lg mx-auto">
               <img
                 src="/donation.jpg"
                 alt="Donation QR Code"
                 className="w-full h-full object-cover"
               />
             </div>
-            <p className="text-sm font-medium text-white/50 pt-2">
-              Scan the QR code to donate
-            </p>
+
+            <div className="flex flex-col items-center justify-center space-y-2 text-center w-full px-4 pb-4">
+              <div className="h-px w-1/2 bg-white/10 my-2"></div>
+              <p className="text-sm font-medium text-white/90">TRAN VAN KHOI</p>
+              <div className="bg-white/5 border border-white/10 rounded-md px-4 py-2 mt-1">
+                <p className="text-lg font-mono text-yellow-500 tracking-wider">
+                  0285 3220 901
+                </p>
+              </div>
+              <p className="text-xs text-white/50 pt-2 uppercase tracking-wide">
+                TPBank
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

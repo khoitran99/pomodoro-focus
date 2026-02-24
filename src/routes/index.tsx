@@ -5,6 +5,7 @@ import { SetupScreen } from "@/components/SetupScreen";
 import { TimerScreen } from "@/components/TimerScreen";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { DonationPopup } from "@/components/DonationPopup";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -63,6 +64,9 @@ function App() {
         isRunning={isRunning}
         setAudioLoading={setIsWaitingForAudio}
       />
+
+      {/* Floating Donation Popup */}
+      <DonationPopup />
     </div>
   );
 }

@@ -65,6 +65,7 @@ export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
           className={`absolute inset-0 bg-linear-to-br transition-colors duration-1000 ${
             !isImageTheme ? baseGradient : ""
           }`}
+          style={{ willChange: "transform, opacity" }}
         >
           {/* Image Background with slow pan/zoom (Ken Burns effect) */}
           {isImageTheme && imageUrl && (
@@ -74,32 +75,26 @@ export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
                 backgroundImage: `url('${imageUrl}')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                willChange: "transform",
               }}
-              animate={{
-                scale: [1, 1.1, 1],
-                x: ["0%", "-2%", "0%"],
-                y: ["0%", "2%", "0%"],
-              }}
-              transition={{
-                duration: 60,
-                ease: "linear",
-                repeat: Infinity,
-                repeatType: "mirror",
-              }}
+              // Removed expensive continuous scale/pan (Ken Burns) effect for drastically improved thermal/GPU performance
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.5 }}
             />
           )}
 
-          {/* Floating Gradients (only visible on non-image themes to keep images clear) */}
+          {/* Floating Gradients - replaced expensive dynamic background generation with pre-computed radial-gradients */}
           {!isImageTheme && (
             <motion.div
-              className="absolute inset-0 mix-blend-overlay opacity-40"
+              className="absolute inset-0 opacity-30"
+              style={{
+                background: `radial-gradient(circle at 50% 50%, ${phaseColors[1]} 0%, transparent 70%)`,
+                willChange: "transform, opacity",
+              }}
               animate={{
-                background: [
-                  `radial-gradient(circle at 20% 30%, ${phaseColors[0]} 0%, transparent 60%)`,
-                  `radial-gradient(circle at 80% 70%, ${phaseColors[1]} 0%, transparent 60%)`,
-                  `radial-gradient(circle at 50% 50%, ${phaseColors[2]} 0%, transparent 60%)`,
-                  `radial-gradient(circle at 20% 30%, ${phaseColors[0]} 0%, transparent 60%)`,
-                ],
+                opacity: [0.2, 0.4, 0.2],
+                scale: [1, 1.1, 1],
               }}
               transition={{
                 duration: 15, // Breath duration
@@ -109,31 +104,37 @@ export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
             />
           )}
 
-          {/* Slow floating orb 1 */}
+          {/* Slow floating orb 1 - Replaced expensive blur filter with native radial gradient */}
           {!isImageTheme && (
             <motion.div
-              className="absolute w-[60vw] h-[60vw] p-0 blur-[120px] rounded-full sm:w-125 sm:h-125"
-              style={{ background: phaseColors[1], opacity: 0.25 }}
-              animate={{
-                x: ["0%", "10%", "-10%", "0%"],
-                y: ["0%", "-10%", "10%", "0%"],
-                scale: [1, 1.1, 0.9, 1],
+              className="absolute top-[-10%] left-[-10%] w-[80vw] h-[80vw] rounded-full sm:w-[50vw] sm:h-[50vw]"
+              style={{
+                background: `radial-gradient(circle, ${phaseColors[0]} 0%, transparent 60%)`,
+                opacity: 0.3,
+                willChange: "transform",
               }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              animate={{
+                x: ["0%", "5%", "-5%", "0%"],
+                y: ["0%", "-5%", "5%", "0%"],
+              }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             />
           )}
 
-          {/* Slow floating orb 2 */}
+          {/* Slow floating orb 2 - Replaced expensive blur filter with native radial gradient */}
           {!isImageTheme && (
             <motion.div
-              className="absolute bottom-0 right-0 w-[50vw] h-[50vw] p-0 blur-[100px] rounded-full sm:w-100 sm:h-100"
-              style={{ background: phaseColors[0], opacity: 0.2 }}
-              animate={{
-                x: ["0%", "-20%", "10%", "0%"],
-                y: ["0%", "10%", "-20%", "0%"],
-                scale: [0.9, 1.2, 1, 0.9],
+              className="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] rounded-full sm:w-[45vw] sm:h-[45vw]"
+              style={{
+                background: `radial-gradient(circle, ${phaseColors[2]} 0%, transparent 60%)`,
+                opacity: 0.25,
+                willChange: "transform",
               }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              animate={{
+                x: ["0%", "-5%", "5%", "0%"],
+                y: ["0%", "5%", "-5%", "0%"],
+              }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
             />
           )}
         </motion.div>

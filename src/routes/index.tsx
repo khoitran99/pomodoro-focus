@@ -6,6 +6,7 @@ import { TimerScreen } from "@/components/TimerScreen";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { DonationPopup } from "@/components/DonationPopup";
+import { FullscreenButton } from "@/components/FullscreenButton";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -67,6 +68,11 @@ function App() {
 
       {/* Floating Donation Popup */}
       <DonationPopup />
+
+      {/* Floating Fullscreen Toggle */}
+      <div className="fixed top-6 right-6 z-50">
+        <FullscreenButton />
+      </div>
     </div>
   );
 }

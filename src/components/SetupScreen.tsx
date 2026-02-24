@@ -50,12 +50,12 @@ export function SetupScreen({
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-md mx-auto z-10"
     >
-      <Card className="bg-white/10 dark:bg-neutral-900/50 backdrop-blur-xl border-white/20 dark:border-white/10 shadow-2xl">
+      <Card className="bg-white/10 dark:bg-neutral-900/50 backdrop-blur-xl border-white/20 dark:border-white/10 shadow-2xl text-white">
         <CardHeader>
           <CardTitle className="text-2xl text-center font-bold">
             Focus Session
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-white/70">
             Configure your pomodoro parameters.
           </CardDescription>
         </CardHeader>
@@ -102,7 +102,7 @@ export function SetupScreen({
             <div className="flex items-center justify-between">
               <Label htmlFor="infinite-mode" className="flex flex-col gap-1">
                 <span>Infinite Mode</span>
-                <span className="font-normal text-xs text-muted-foreground">
+                <span className="font-normal text-xs text-white/70">
                   Repeat sessions forever
                 </span>
               </Label>
@@ -148,7 +148,7 @@ export function SetupScreen({
                 onThemeChange?.(val);
               }}
             >
-              <SelectTrigger className="bg-white/5 border-white/10">
+              <SelectTrigger className="bg-white/5 border-white/10 text-white [&_svg]:text-white data-placeholder:text-white/70">
                 <SelectValue placeholder="Select a theme" />
               </SelectTrigger>
               <SelectContent>
@@ -175,7 +175,7 @@ export function SetupScreen({
           >
             Start Focus
           </Button>
-          <div className="text-xs text-neutral-500 font-light text-center">
+          <div className="text-xs text-white/50 font-light text-center">
             Made by Khoi Tran
           </div>
         </CardFooter>

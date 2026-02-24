@@ -80,26 +80,26 @@ export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
               initial={{ opacity: 0, scale: 1, x: "0%", y: "0%" }}
               animate={{
                 opacity: 1,
-                scale: [1, 1.05, 1], // Reduced scale range
-                x: ["0%", "-1%", "0%"], // Reduced pan range
+                scale: [1, 1.2, 1], // Increased scale range to 1.2 per user request
+                x: ["0%", "-1%", "0%"], // Keeping subtle pan
                 y: ["0%", "1%", "0%"],
               }}
               transition={{
                 opacity: { duration: 1.5 },
                 scale: {
-                  duration: 120,
+                  duration: 50, // Reduced duration to 50s per user request
                   ease: "linear",
                   repeat: Infinity,
                   repeatType: "mirror",
                 },
                 x: {
-                  duration: 120,
+                  duration: 50,
                   ease: "linear",
                   repeat: Infinity,
                   repeatType: "mirror",
                 },
                 y: {
-                  duration: 120,
+                  duration: 50,
                   ease: "linear",
                   repeat: Infinity,
                   repeatType: "mirror",

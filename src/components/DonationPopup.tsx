@@ -39,7 +39,7 @@ export function DonationPopup() {
               <img
                 src="/donation.jpg"
                 alt="Donation QR Code"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover scale-[1.35] -translate-y-[4%]"
               />
             </div>
 

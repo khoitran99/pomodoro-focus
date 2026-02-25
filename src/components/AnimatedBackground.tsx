@@ -70,95 +70,51 @@ export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
           {/* Image Background with slow pan/zoom (Ken Burns effect) */}
           {isImageTheme && imageUrl && (
             <motion.div
-              className="absolute inset-[-10%]" // give room to pan
+              className="absolute inset-[-10%] animate-ken-burns" // give room to pan. Uses CSS animation for 0 CPU overhead.
               style={{
                 backgroundImage: `url('${imageUrl}')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 willChange: "transform",
               }}
-              initial={{ opacity: 0, scale: 1, x: "0%", y: "0%" }}
-              animate={{
-                opacity: 1,
-                scale: [1, 1.15, 1], // Adjusted scale to 1.15 per user request
-                x: ["0%", "-1%", "0%"], // Keeping subtle pan
-                y: ["0%", "1%", "0%"],
-              }}
-              transition={{
-                opacity: { duration: 1.5 },
-                scale: {
-                  duration: 60, // Adjusted duration to 60s per user request
-                  ease: "linear",
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                },
-                x: {
-                  duration: 60,
-                  ease: "linear",
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                },
-                y: {
-                  duration: 60,
-                  ease: "linear",
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                },
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1.5 }}
             />
           )}
 
           {/* Floating Gradients - replaced expensive dynamic background generation with pre-computed radial-gradients */}
           {!isImageTheme && (
-            <motion.div
-              className="absolute inset-0 opacity-30"
+            <div
+              className="absolute inset-0 opacity-30 animate-breathe-gradient"
               style={{
                 background: `radial-gradient(circle at 50% 50%, ${phaseColors[1]} 0%, transparent 70%)`,
                 willChange: "transform, opacity",
               }}
-              animate={{
-                opacity: [0.2, 0.4, 0.2],
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 15, // Breath duration
-                ease: "easeInOut",
-                repeat: Infinity,
-              }}
             />
           )}
 
-          {/* Slow floating orb 1 - Replaced expensive blur filter with native radial gradient */}
+          {/* Slow floating orb 1 - Native CSS Animation */}
           {!isImageTheme && (
-            <motion.div
-              className="absolute top-[-10%] left-[-10%] w-[80vw] h-[80vw] rounded-full sm:w-[50vw] sm:h-[50vw]"
+            <div
+              className="absolute top-[-10%] left-[-10%] w-[80vw] h-[80vw] rounded-full sm:w-[50vw] sm:h-[50vw] animate-float-orb-fast"
               style={{
                 background: `radial-gradient(circle, ${phaseColors[0]} 0%, transparent 60%)`,
                 opacity: 0.3,
                 willChange: "transform",
               }}
-              animate={{
-                x: ["0%", "5%", "-5%", "0%"],
-                y: ["0%", "-5%", "5%", "0%"],
-              }}
-              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             />
           )}
 
-          {/* Slow floating orb 2 - Replaced expensive blur filter with native radial gradient */}
+          {/* Slow floating orb 2 - Native CSS Animation */}
           {!isImageTheme && (
-            <motion.div
-              className="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] rounded-full sm:w-[45vw] sm:h-[45vw]"
+            <div
+              className="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] rounded-full sm:w-[45vw] sm:h-[45vw] animate-float-orb-slow"
               style={{
                 background: `radial-gradient(circle, ${phaseColors[2]} 0%, transparent 60%)`,
                 opacity: 0.25,
                 willChange: "transform",
               }}
-              animate={{
-                x: ["0%", "-5%", "5%", "0%"],
-                y: ["0%", "5%", "-5%", "0%"],
-              }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
             />
           )}
         </motion.div>

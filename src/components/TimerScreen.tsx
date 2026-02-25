@@ -148,7 +148,7 @@ export function TimerScreen({
             strokeWidth="8"
           />
           {/* Progress Track */}
-          <motion.circle
+          <circle
             cx="128"
             cy="128"
             r={circleRadius}
@@ -157,11 +157,10 @@ export function TimerScreen({
             strokeWidth="8"
             strokeLinecap="round"
             className="text-white"
-            initial={{ strokeDashoffset: circleCircumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ ease: "linear", duration: 1 }}
             style={{
               strokeDasharray: circleCircumference,
+              strokeDashoffset: strokeDashoffset,
+              transition: "stroke-dashoffset 1s linear",
             }}
           />
         </svg>

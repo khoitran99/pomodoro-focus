@@ -57,7 +57,13 @@ export function AudioPlayer({
 
   useEffect(() => {
     if (player) {
-      player.setVolume(volume * 100);
+      try {
+        if (player.getIframe()) {
+          player.setVolume(volume * 100);
+        }
+      } catch (e) {
+        console.warn("YouTube player volume error:", e);
+      }
     }
   }, [volume, player]);
 
@@ -66,15 +72,21 @@ export function AudioPlayer({
   useEffect(() => {
     if (!player) return;
 
-    if (shouldPlay) {
-      if (!isPlaying) {
-        setAudioLoading?.(true);
-        player.playVideo();
+    try {
+      if (!player.getIframe()) return;
+
+      if (shouldPlay) {
+        if (!isPlaying) {
+          setAudioLoading?.(true);
+          player.playVideo();
+        }
+      } else {
+        if (isPlaying) {
+          player.pauseVideo();
+        }
       }
-    } else {
-      if (isPlaying) {
-        player.pauseVideo();
-      }
+    } catch (e) {
+      console.warn("YouTube player play/pause error:", e);
     }
   }, [shouldPlay, player, isPlaying, setAudioLoading]);
 
@@ -82,11 +94,17 @@ export function AudioPlayer({
     const newEnabledState = !isMusicEnabled;
     setIsMusicEnabled(newEnabledState);
 
-    if (newEnabledState && phase === "work" && isRunning) {
-      setAudioLoading?.(true);
-      player?.playVideo();
-    } else if (!newEnabledState) {
-      player?.pauseVideo();
+    try {
+      if (player && player.getIframe()) {
+        if (newEnabledState && phase === "work" && isRunning) {
+          setAudioLoading?.(true);
+          player.playVideo();
+        } else if (!newEnabledState) {
+          player.pauseVideo();
+        }
+      }
+    } catch (e) {
+      console.warn("YouTube player toggle error:", e);
     }
   };
 
@@ -104,11 +122,17 @@ export function AudioPlayer({
 
   const onReady = (event: YouTubeEvent) => {
     setPlayer(event.target);
-    event.target.setVolume(volume * 100);
-    if (shouldPlay) {
-      event.target.playVideo();
-    } else {
-      event.target.pauseVideo();
+    try {
+      if (event.target.getIframe()) {
+        event.target.setVolume(volume * 100);
+        if (shouldPlay) {
+          event.target.playVideo();
+        } else {
+          event.target.pauseVideo();
+        }
+      }
+    } catch (e) {
+      console.warn("YouTube player onReady error:", e);
     }
   };
 

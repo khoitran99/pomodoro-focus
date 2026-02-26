@@ -4,6 +4,7 @@ import type { Phase } from "@/hooks/usePomodoro";
 interface AnimatedBackgroundProps {
   theme: string;
   phase: Phase;
+  customBackground?: string;
 }
 
 const themeGradients: Record<string, string> = {
@@ -46,9 +47,17 @@ const getPhaseColors = (phase: Phase) => {
   }
 };
 
-export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
-  const isImageTheme = theme.startsWith("image-");
-  const imageUrl = isImageTheme ? imageThemes[theme] : null;
+export function AnimatedBackground({
+  theme,
+  phase,
+  customBackground,
+}: AnimatedBackgroundProps) {
+  const isImageTheme = theme.startsWith("image-") || !!customBackground;
+  const imageUrl = customBackground
+    ? customBackground
+    : isImageTheme
+      ? imageThemes[theme]
+      : null;
 
   const baseGradient = themeGradients[theme] || themeGradients.midnight;
   const phaseColors = getPhaseColors(phase);

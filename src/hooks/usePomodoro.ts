@@ -7,6 +7,8 @@ export interface PomodoroConfig {
   restDuration: number; // minutes
   iterations: number; // 0 means infinity
   theme: string;
+  youtubeUrl?: string;
+  customBackground?: string;
 }
 
 export function usePomodoro() {
@@ -15,6 +17,8 @@ export function usePomodoro() {
     restDuration: 5,
     iterations: 0, // infinity by default
     theme: "image-city",
+    youtubeUrl: "",
+    customBackground: "",
   });
 
   const [phase, setPhase] = useState<Phase>("setup");

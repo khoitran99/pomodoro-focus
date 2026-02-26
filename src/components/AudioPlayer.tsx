@@ -1,155 +1,150 @@
-import { useState, useRef, useEffect } from "react";
-import { Volume2, VolumeX, Music } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Volume2, VolumeX, Music, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
+import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
 import type { Phase } from "@/hooks/usePomodoro";
 
-// Reliable Free Lofi radio stream
-const LOFI_STREAM_URL = "https://lofi.stream.laut.fm/lofi";
+const LOFI_PLAYLIST = [
+  { id: "jfKfPfyJRdk", title: "Lofi Girl Radio" },
+  { id: "4xDzrIxqeac", title: "Lofi Cafe Radio" },
+  { id: "rUxyKA_-grg", title: "Japanese Lofi" },
+  { id: "7NOSDKb0HlU", title: "Chillhop Radio" },
+  { id: "nDq6TstdEi8", title: "Synthwave Beats" },
+];
+
+function extractYoutubeId(url: string) {
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/,
+  );
+  return match ? match[1] : null;
+}
 
 interface AudioPlayerProps {
   phase: Phase;
   isRunning?: boolean;
   setAudioLoading?: (loading: boolean) => void;
+  youtubeUrl?: string;
 }
 
 export function AudioPlayer({
   phase,
   isRunning = false,
   setAudioLoading,
+  youtubeUrl,
 }: AudioPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false); // actual audio playing state
-  const [isMusicEnabled, setIsMusicEnabled] = useState(true); // user preference switch - enabled by default per user request
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMusicEnabled, setIsMusicEnabled] = useState(true);
   const [volume, setVolume] = useState(0.5);
   const [showVolume, setShowVolume] = useState(false);
-  const [songName, setSongName] = useState<string>("");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isPlayPending = useRef(false);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const [player, setPlayer] = useState<YouTubePlayer | null>(null);
 
-  // Auto-hide volume after 3 seconds of inactivity
+  const customVideoId = youtubeUrl ? extractYoutubeId(youtubeUrl) : null;
+  const activeVideoId = customVideoId || LOFI_PLAYLIST[trackIndex].id;
+  const songName = customVideoId
+    ? "Custom YT Stream"
+    : LOFI_PLAYLIST[trackIndex].title;
+
+  // Auto-hide volume
   useEffect(() => {
     if (showVolume) {
-      const timer = setTimeout(() => {
-        setShowVolume(false);
-      }, 3000);
+      const timer = setTimeout(() => setShowVolume(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [showVolume, volume]);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-
-    const fetchSong = async () => {
-      // Don't poll network or trigger state updates if the tab is hidden
-      if (typeof document !== "undefined" && document.hidden) return;
-
-      try {
-        const res = await fetch(
-          "https://api.laut.fm/station/lofi/current_song",
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.title && data.artist && data.artist.name) {
-            setSongName(`${data.artist.name} - ${data.title}`);
-          } else if (data && data.title) {
-            setSongName(data.title);
-          }
-        }
-      } catch (e) {
-        // ignore errors
-      }
-    };
-
-    if (isPlaying) {
-      if (!songName) setSongName("Loading...");
-      fetchSong();
-      interval = setInterval(fetchSong, 20000); // Poll every 20 seconds
-    } else {
-      setSongName("");
+    if (player) {
+      player.setVolume(volume * 100);
     }
+  }, [volume, player]);
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlaying]);
+  const shouldPlay = isMusicEnabled && phase === "work" && isRunning;
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  // Auto-play/pause based on phase, isRunning, and user preference
-  useEffect(() => {
-    if (!audioRef.current) return;
-
-    const shouldPlay = isMusicEnabled && phase === "work" && isRunning;
+    if (!player) return;
 
     if (shouldPlay) {
-      if (!isPlaying && !isPlayPending.current) {
-        isPlayPending.current = true;
+      if (!isPlaying) {
         setAudioLoading?.(true);
-        audioRef.current
-          .play()
-          .then(() => {
-            setIsPlaying(true);
-            isPlayPending.current = false;
-            setAudioLoading?.(false);
-          })
-          .catch((e) => {
-            console.error("Auto-play blocked", e);
-            isPlayPending.current = false;
-            setAudioLoading?.(false);
-          });
+        player.playVideo();
       }
     } else {
       if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
+        player.pauseVideo();
       }
     }
-  }, [phase, isRunning, isMusicEnabled, isPlaying, setAudioLoading]);
+  }, [shouldPlay, player, isPlaying, setAudioLoading]);
 
   const togglePlay = () => {
     const newEnabledState = !isMusicEnabled;
     setIsMusicEnabled(newEnabledState);
 
-    // If we turned it on, but we aren't in a running focus work session,
-    // we should still play it right now so the user knows it works,
-    // or we only play if we are in a session.
-    // The user requirement: "Only the section is running, the music play."
     if (newEnabledState && phase === "work" && isRunning) {
-      isPlayPending.current = true;
       setAudioLoading?.(true);
-      audioRef.current
-        ?.play()
-        .then(() => {
-          setIsPlaying(true);
-          isPlayPending.current = false;
-          setAudioLoading?.(false);
-        })
-        .catch((e) => {
-          console.error(e);
-          isPlayPending.current = false;
-          setAudioLoading?.(false);
-        });
+      player?.playVideo();
     } else if (!newEnabledState) {
-      audioRef.current?.pause();
+      player?.pauseVideo();
+    }
+  };
+
+  const nextTrack = () => {
+    if (customVideoId) return;
+    setTrackIndex((prev) => (prev + 1) % LOFI_PLAYLIST.length);
+  };
+
+  const prevTrack = () => {
+    if (customVideoId) return;
+    setTrackIndex(
+      (prev) => (prev - 1 + LOFI_PLAYLIST.length) % LOFI_PLAYLIST.length,
+    );
+  };
+
+  const onReady = (event: YouTubeEvent) => {
+    setPlayer(event.target);
+    event.target.setVolume(volume * 100);
+    if (shouldPlay) {
+      event.target.playVideo();
+    } else {
+      event.target.pauseVideo();
+    }
+  };
+
+  const onStateChange = (event: YouTubeEvent) => {
+    // 1: PLAYING, 2: PAUSED, 3: BUFFERING
+    if (event.data === 1) {
+      setIsPlaying(true);
+      setAudioLoading?.(false);
+    } else if (event.data === 2) {
       setIsPlaying(false);
-      if (isPlayPending.current) {
-        isPlayPending.current = false;
-        setAudioLoading?.(false);
-      }
+    } else if (event.data === 3) {
+      setAudioLoading?.(true);
     }
   };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
-      <audio ref={audioRef} src={LOFI_STREAM_URL} loop preload="none" />
+      {/* Invisible YouTube Player */}
+      <div className="hidden">
+        <YouTube
+          videoId={activeVideoId}
+          onReady={onReady}
+          onStateChange={onStateChange}
+          opts={{
+            playerVars: {
+              autoplay: 0,
+              controls: 0,
+              disablekb: 1,
+              loop: 1,
+            },
+          }}
+        />
+      </div>
 
       <AnimatePresence>
-        {isPlaying && songName && !showVolume && (
+        {isPlaying && !showVolume && (
           <motion.div
             initial={{ opacity: 0, x: 20, width: 0 }}
             animate={{ opacity: 1, x: 0, width: "auto" }}
@@ -197,26 +192,53 @@ export function AudioPlayer({
         )}
       </AnimatePresence>
 
-      <div className="flex bg-black/60 rounded-full border border-white/10 p-1 shadow-2xl">
+      <div className="flex bg-black/60 rounded-full border border-white/10 p-1 shadow-2xl items-center">
+        {!customVideoId && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={prevTrack}
+            className="rounded-full text-white/70 hover:text-white hover:bg-white/10 w-8 h-8 mx-1"
+          >
+            <SkipBack className="w-4 h-4" />
+          </Button>
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={togglePlay}
+          className={`rounded-full transition-colors w-10 h-10 ${
+            isMusicEnabled
+              ? "text-black bg-white hover:bg-white/90"
+              : "text-white/70 hover:text-white hover:bg-white/10"
+          }`}
+        >
+          <Music className={`w-5 h-5 ${isPlaying ? "animate-pulse" : ""}`} />
+        </Button>
+
+        {!customVideoId && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nextTrack}
+            className="rounded-full text-white/70 hover:text-white hover:bg-white/10 w-8 h-8 mx-1"
+          >
+            <SkipForward className="w-4 h-4" />
+          </Button>
+        )}
+
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setShowVolume(!showVolume)}
-          className="rounded-full text-white/70 hover:text-white hover:bg-white/10"
+          className="rounded-full text-white/70 hover:text-white hover:bg-white/10 w-10 h-10"
         >
           {volume === 0 ? (
             <VolumeX className="w-5 h-5" />
           ) : (
             <Volume2 className="w-5 h-5" />
           )}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={togglePlay}
-          className={`rounded-full transition-colors ${isMusicEnabled ? "text-black bg-white hover:bg-white/90" : "text-white/70 hover:text-white hover:bg-white/10"}`}
-        >
-          <Music className={`w-5 h-5 ${isPlaying ? "animate-pulse" : ""}`} />
         </Button>
       </div>
     </div>

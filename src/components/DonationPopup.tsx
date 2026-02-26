@@ -16,7 +16,7 @@ export function DonationPopup() {
         <DialogTrigger asChild>
           <Button
             variant="ghost"
-            className="rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center gap-2 px-4 py-2 hover:bg-white/10 transition-colors shadow-2xl"
+            className="rounded-full bg-black/60 border border-white/10 text-white flex items-center gap-2 px-4 py-2 hover:bg-white/20 transition-colors shadow-2xl"
           >
             <Coffee className="w-5 h-5 text-yellow-500" />
             <span className="font-light text-sm hidden sm:inline-block">

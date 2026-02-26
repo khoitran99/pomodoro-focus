@@ -110,7 +110,7 @@ export function TimerScreen({
       exit="exit"
       className="flex flex-col items-center justify-center p-8 space-y-12 z-10 w-full max-w-md"
     >
-      <div className="text-center space-y-2 drop-shadow-md bg-white/10 backdrop-blur-sm px-8 py-4 rounded-3xl border border-white/20">
+      <div className="text-center space-y-2 drop-shadow-md bg-white/20 px-8 py-4 rounded-3xl border border-white/20">
         <h2 className="text-3xl font-light uppercase tracking-widest flex items-center justify-center gap-3">
           {phase === "work" ? (
             <span className="text-white font-semibold">Focus</span>
@@ -189,7 +189,7 @@ export function TimerScreen({
             variant="outline"
             size="icon"
             onClick={onStop}
-            className="w-14 h-14 rounded-full border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md"
+            className="w-14 h-14 rounded-full border-white/20 bg-white/20 hover:bg-white/30 text-white"
           >
             <Square className="w-5 h-5 fill-current" />
           </Button>
@@ -199,7 +199,7 @@ export function TimerScreen({
           <Button
             size="icon"
             onClick={onPauseResume}
-            className="w-20 h-20 rounded-full bg-white/10 text-white border border-white/20 hover:bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all backdrop-blur-md"
+            className="w-20 h-20 rounded-full bg-white/20 text-white border border-white/20 hover:bg-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all"
           >
             {isRunning ? (
               <Pause className="w-8 h-8 fill-current" />
@@ -215,7 +215,7 @@ export function TimerScreen({
             variant="outline"
             size="icon"
             onClick={onReset}
-            className="w-14 h-14 rounded-full border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md"
+            className="w-14 h-14 rounded-full border-white/20 bg-white/20 hover:bg-white/30 text-white"
           >
             <RotateCcw className="w-5 h-5" />
           </Button>

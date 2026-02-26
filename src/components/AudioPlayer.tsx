@@ -154,7 +154,7 @@ export function AudioPlayer({
             initial={{ opacity: 0, x: 20, width: 0 }}
             animate={{ opacity: 1, x: 0, width: "auto" }}
             exit={{ opacity: 0, x: 20, width: 0 }}
-            className="overflow-hidden bg-black/40 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 border border-white/10 text-white/80 text-sm font-light whitespace-nowrap"
+            className="overflow-hidden bg-black/60 rounded-full px-4 py-2 flex items-center gap-2 border border-white/10 text-white/80 text-sm font-light whitespace-nowrap"
           >
             <div className="flex items-center gap-0.5 h-3">
               <motion.div
@@ -184,7 +184,7 @@ export function AudioPlayer({
             initial={{ opacity: 0, x: 20, width: 0 }}
             animate={{ opacity: 1, x: 0, width: 100 }}
             exit={{ opacity: 0, x: 20, width: 0 }}
-            className="overflow-hidden bg-black/40 backdrop-blur-md rounded-full px-3 py-2 flex items-center border border-white/10"
+            className="overflow-hidden bg-black/60 rounded-full px-3 py-2 flex items-center border border-white/10"
           >
             <Slider
               value={[volume]}
@@ -197,7 +197,7 @@ export function AudioPlayer({
         )}
       </AnimatePresence>
 
-      <div className="flex bg-black/40 backdrop-blur-md rounded-full border border-white/10 p-1 shadow-2xl">
+      <div className="flex bg-black/60 rounded-full border border-white/10 p-1 shadow-2xl">
         <Button
           variant="ghost"
           size="icon"

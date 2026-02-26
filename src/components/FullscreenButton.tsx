@@ -35,7 +35,7 @@ export function FullscreenButton() {
       variant="ghost"
       size="icon"
       onClick={toggleFullscreen}
-      className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors shadow-2xl"
+      className="w-10 h-10 rounded-full bg-black/60 border border-white/10 text-white hover:bg-white/20 transition-colors shadow-2xl"
       title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
     >
       {isFullscreen ? (

@@ -50,7 +50,7 @@ export function SetupScreen({
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="w-full max-w-md mx-auto z-10"
     >
-      <Card className="bg-white/10 dark:bg-neutral-900/50 backdrop-blur-xl border-white/20 dark:border-white/10 shadow-2xl text-white">
+      <Card className="bg-white/20 dark:bg-neutral-900/60 border-white/20 dark:border-white/10 shadow-2xl text-white">
         <CardHeader>
           <CardTitle className="text-2xl text-center font-bold">
             Focus Session

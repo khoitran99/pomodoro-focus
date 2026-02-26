@@ -126,10 +126,10 @@ export function AudioPlayer({
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
-      {/* Invisible YouTube Player */}
-      <div className="hidden">
+      {/* Invisible YouTube Player - must not use display:none or the iframe API crashes trying to read src */}
+      <div className="absolute opacity-0 pointer-events-none w-px h-px overflow-hidden">
         <YouTube
-          videoId={activeVideoId}
+          videoId={activeVideoId || ""}
           onReady={onReady}
           onStateChange={onStateChange}
           opts={{

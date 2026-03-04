@@ -30,11 +30,7 @@ function App() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-white font-sans antialiased selection:bg-white/20">
-      <AnimatedBackground
-        theme={config.theme}
-        phase={phase}
-        customBackground={config.customBackground}
-      />
+      <AnimatedBackground theme={config.theme} phase={phase} />
 
       {/* Main Content Area */}
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
@@ -68,7 +64,6 @@ function App() {
         phase={phase}
         isRunning={isRunning}
         setAudioLoading={setIsWaitingForAudio}
-        youtubeUrl={config.youtubeUrl}
       />
 
       {/* Floating Donation Popup */}

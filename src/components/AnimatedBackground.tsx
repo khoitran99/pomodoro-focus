@@ -1,37 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Phase } from "@/hooks/usePomodoro";
-
-interface AnimatedBackgroundProps {
-  theme: string;
-  phase: Phase;
-}
-
-const themeGradients: Record<string, string> = {
-  midnight: "from-fuchsia-950 via-indigo-950 to-rose-950",
-  forest: "from-emerald-950 via-teal-900 to-cyan-950",
-  ocean: "from-cyan-950 via-blue-900 to-indigo-950",
-};
-
-const imageThemes: Record<string, string> = {
-  "image-beach":
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
-  "image-city":
-    "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1920&q=80",
-  "image-coffee":
-    "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1920&q=80",
-  "image-study":
-    "https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=1920&q=80",
-  "image-forest":
-    "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80",
-  "image-sky":
-    "https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?auto=format&fit=crop&w=1920&q=80",
-  "image-galaxy":
-    "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1920&q=80",
-  "image-mars":
-    "https://images.unsplash.com/photo-1614728263952-84ea256f9679?auto=format&fit=crop&w=1920&q=80",
-  "image-blackhole":
-    "https://images.unsplash.com/photo-1462332420958-a05d1e002413?auto=format&fit=crop&w=1920&q=80",
-};
+import { themeGradients, imageThemes } from "@/lib/themes";
 
 const getPhaseColors = (phase: Phase) => {
   switch (phase) {
@@ -45,6 +14,11 @@ const getPhaseColors = (phase: Phase) => {
       return ["#1e1b4b", "#312e81", "#1e1b4b"];
   }
 };
+
+interface AnimatedBackgroundProps {
+  theme: string;
+  phase: Phase;
+}
 
 export function AnimatedBackground({ theme, phase }: AnimatedBackgroundProps) {
   const isImageTheme = theme.startsWith("image-");

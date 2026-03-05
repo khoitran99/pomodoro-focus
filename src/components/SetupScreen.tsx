@@ -12,13 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Palette } from "lucide-react";
+import { ThemeModal } from "./ThemeModal";
+import { themes } from "@/lib/themes";
 import type { PomodoroConfig } from "@/hooks/usePomodoro";
 
 interface SetupScreenProps {
@@ -34,6 +30,7 @@ export function SetupScreen({
 }: SetupScreenProps) {
   const [config, setConfig] = useState<PomodoroConfig>(initialConfig);
   const [isInfinite, setIsInfinite] = useState(initialConfig.iterations === 0);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
   const handleStart = () => {
     onStart({
@@ -141,31 +138,18 @@ export function SetupScreen({
 
           <div className="space-y-3">
             <Label>Theme</Label>
-            <Select
-              value={config.theme}
-              onValueChange={(val) => {
-                setConfig({ ...config, theme: val });
-                onThemeChange?.(val);
-              }}
+            <button
+              onClick={() => setIsThemeModalOpen(true)}
+              className="flex items-center justify-between w-full h-10 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-md text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/20"
             >
-              <SelectTrigger className="bg-white/5 border-white/10 text-white [&_svg]:text-white data-placeholder:text-white/70">
-                <SelectValue placeholder="Select a theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="midnight">Midnight Calm</SelectItem>
-                <SelectItem value="forest">Deep Forest</SelectItem>
-                <SelectItem value="ocean">Ocean Breeze</SelectItem>
-                <SelectItem value="image-beach">Serene Beach</SelectItem>
-                <SelectItem value="image-city">City at Night</SelectItem>
-                <SelectItem value="image-coffee">Cozy Cafe</SelectItem>
-                <SelectItem value="image-study">Study Desk</SelectItem>
-                <SelectItem value="image-forest">Misty Forest</SelectItem>
-                <SelectItem value="image-sky">Clear Sky</SelectItem>
-                <SelectItem value="image-galaxy">Deep Galaxy</SelectItem>
-                <SelectItem value="image-mars">Red Mars</SelectItem>
-                <SelectItem value="image-blackhole">Black Hole</SelectItem>
-              </SelectContent>
-            </Select>
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-white/70" />
+                <span>
+                  {themes.find((t) => t.id === config.theme)?.name || "Theme"}
+                </span>
+              </div>
+              <span className="text-xs text-white/50">Change</span>
+            </button>
           </div>
         </CardContent>
         <CardFooter className="flex-col gap-4">
@@ -180,6 +164,16 @@ export function SetupScreen({
           </div>
         </CardFooter>
       </Card>
+
+      <ThemeModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+        currentTheme={config.theme}
+        onSelectTheme={(themeId) => {
+          setConfig({ ...config, theme: themeId });
+          onThemeChange?.(themeId);
+        }}
+      />
     </motion.div>
   );
 }

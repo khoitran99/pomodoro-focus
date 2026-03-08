@@ -74,6 +74,12 @@ export function usePomodoro() {
     currentIteration,
   ]);
 
+  const skipRest = useCallback(() => {
+    if (phase === "rest") {
+      transitionPhase();
+    }
+  }, [phase, transitionPhase]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -101,5 +107,6 @@ export function usePomodoro() {
     pauseResume,
     stopSession,
     resetSession,
+    skipRest,
   };
 }

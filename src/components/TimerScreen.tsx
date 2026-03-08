@@ -1,6 +1,13 @@
 import { useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
-import { Play, Pause, Square, RotateCcw, Loader2 } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Square,
+  RotateCcw,
+  Loader2,
+  SkipForward,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PomodoroConfig, Phase } from "@/hooks/usePomodoro";
 
@@ -14,6 +21,7 @@ interface TimerScreenProps {
   onPauseResume: () => void;
   onStop: () => void;
   onReset?: () => void;
+  onSkipRest?: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -32,6 +40,7 @@ export function TimerScreen({
   onPauseResume,
   onStop,
   onReset,
+  onSkipRest,
 }: TimerScreenProps) {
   // Calculate progress circle stroke offset
   const getTotalTime = () =>
@@ -101,6 +110,19 @@ export function TimerScreen({
       }
     }
   }, [timeLeft, phase]);
+
+  // Voice Notification 10s before rest phase
+  useEffect(() => {
+    if (phase === "work" && timeLeft === 10) {
+      if ("speechSynthesis" in window) {
+        const msg = new SpeechSynthesisUtterance(
+          "Rest section starting in 10 seconds",
+        );
+        msg.rate = 0.9; // slightly slower for better comprehensibility
+        window.speechSynthesis.speak(msg);
+      }
+    }
+  }, [phase, timeLeft]);
 
   return (
     <motion.div
@@ -220,6 +242,20 @@ export function TimerScreen({
             <RotateCcw className="w-5 h-5" />
           </Button>
         </motion.div>
+
+        {/* Skip Rest button */}
+        {phase === "rest" && onSkipRest && (
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onSkipRest}
+              className="w-14 h-14 rounded-full border-white/20 bg-white/20 hover:bg-white/30 text-white"
+            >
+              <SkipForward className="w-5 h-5" />
+            </Button>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );

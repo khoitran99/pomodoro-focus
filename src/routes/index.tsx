@@ -26,6 +26,7 @@ function App() {
     pauseResume,
     stopSession,
     resetSession,
+    skipRest,
   } = usePomodoro();
 
   return (
@@ -54,6 +55,7 @@ function App() {
               onPauseResume={pauseResume}
               onStop={stopSession}
               onReset={resetSession}
+              onSkipRest={skipRest}
             />
           )}
         </AnimatePresence>

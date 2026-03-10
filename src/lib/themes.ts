@@ -4,7 +4,8 @@ export interface ThemeConfig {
   id: string;
   name: string;
   type: ThemeType;
-  value: string; // Image URL
+  value: string; // Full Image URL
+  thumbnailValue: string; // Compressed Thumbnail URL
 }
 
 const S3_BASE_URL = import.meta.env.VITE_S3_BASE_URL || "";
@@ -53,6 +54,7 @@ const generateThemes = (): ThemeConfig[] => {
       name: cleanName || "Background",
       type: "image",
       value: `${S3_BASE_URL}/background/${filename}`,
+      thumbnailValue: `${S3_BASE_URL}/thumbnails/${filename}`,
     });
   }
 
@@ -64,6 +66,8 @@ const generateThemes = (): ThemeConfig[] => {
       type: "image",
       value:
         "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+      thumbnailValue:
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
     });
   }
 

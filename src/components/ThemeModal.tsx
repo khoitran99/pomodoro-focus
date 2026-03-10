@@ -66,10 +66,12 @@ export function ThemeModal({
                         : "ring-1 ring-white/10 hover:ring-white/30 hover:shadow-md hover:scale-[1.02]"
                     }`}
                   >
-                    {/* Background Preview */}
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                      style={{ backgroundImage: `url(${theme.value})` }}
+                    {/* Thumbnail Preview with Lazy Loading */}
+                    <img
+                      src={theme.thumbnailValue || theme.value}
+                      alt={`${theme.name} preview`}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
 
                     {/* Dark overlay for readability */}

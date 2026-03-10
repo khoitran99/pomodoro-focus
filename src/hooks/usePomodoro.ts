@@ -9,12 +9,19 @@ export interface PomodoroConfig {
   theme: string;
 }
 
+import { themes } from "@/lib/themes";
+
+const defaultThemeId =
+  themes.find((t) => t.id.includes("sebastian"))?.id ||
+  themes[0]?.id ||
+  "default-bg";
+
 export function usePomodoro() {
   const [config, setConfig] = useState<PomodoroConfig>({
     workDuration: 25,
     restDuration: 5,
     iterations: 0, // infinity by default
-    theme: "image-city",
+    theme: defaultThemeId,
   });
 
   const [phase, setPhase] = useState<Phase>("setup");

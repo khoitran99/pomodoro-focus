@@ -68,16 +68,8 @@ export function ThemeModal({
                   >
                     {/* Background Preview */}
                     <div
-                      className={`absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 ${
-                        theme.type === "color"
-                          ? `bg-linear-to-br ${theme.value}`
-                          : ""
-                      }`}
-                      style={
-                        theme.type === "image"
-                          ? { backgroundImage: `url(${theme.value})` }
-                          : undefined
-                      }
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                      style={{ backgroundImage: `url(${theme.value})` }}
                     />
 
                     {/* Dark overlay for readability */}
@@ -85,11 +77,11 @@ export function ThemeModal({
 
                     {/* Label */}
                     <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
-                      <span className="text-sm font-medium text-white shadow-sm">
+                      <span className="text-sm font-medium text-white shadow-sm truncate max-w-[80%] text-left">
                         {theme.name}
                       </span>
                       {isActive && (
-                        <div className="flex items-center justify-center w-6 h-6 bg-white rounded-full">
+                        <div className="flex shrink-0 items-center justify-center w-6 h-6 bg-white rounded-full">
                           <Check className="w-4 h-4 text-black" />
                         </div>
                       )}

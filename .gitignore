@@ -11,3 +11,7 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+
+# Ignore heavy local media folders so they are not pushed to Git
+public/music
+public/background

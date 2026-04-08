@@ -1,63 +1,92 @@
-import { Coffee } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useState } from "react";
+import { Coffee, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { EffectivePerformanceMode } from "@/lib/performance";
 
-export function DonationPopup() {
+interface DonationPopupProps {
+  performanceMode: EffectivePerformanceMode;
+}
+
+export function DonationPopup({ performanceMode }: DonationPopupProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className="fixed bottom-6 left-6 z-50">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            className="rounded-full bg-black/60 border border-white/10 text-white flex items-center gap-2 px-4 py-2 hover:bg-white/20 transition-colors shadow-2xl"
-          >
-            <Coffee className="w-5 h-5 text-yellow-500" />
-            <span className="font-light text-sm hidden sm:inline-block">
-              Buy me a coffee
-            </span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="w-[95vw] sm:max-w-xl bg-neutral-900 border-white/10 text-white rounded-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="text-center sm:text-center space-y-3">
-            <DialogTitle className="text-2xl font-light">
-              Support KT Focus
-            </DialogTitle>
-            <DialogDescription className="text-white/70">
-              If you enjoy using this app and it helps you stay productive,
-              consider buying me a coffee to support future development!
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center space-y-6 pt-4">
-            <div className="relative w-full max-w-sm aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shadow-lg mx-auto">
-              <img
-                src="/donation.jpg"
-                alt="Donation QR Code"
-                className="w-full h-full object-cover scale-[1.6] translate-y-[14%]"
-              />
-            </div>
+      <Button
+        variant="ghost"
+        onClick={() => setIsOpen(true)}
+        className={cn(
+          "animate-screen-enter flex items-center gap-2 rounded-full border px-4 py-2 text-white transition-all duration-300 hover:-translate-y-0.5",
+          performanceMode === "immersive"
+            ? "border-white/10 bg-black/60 shadow-2xl hover:bg-white/20"
+            : "border-white/12 bg-black/80 shadow-xl hover:bg-black/70",
+        )}
+      >
+        <Coffee className="h-5 w-5 text-yellow-500" />
+        <span className="hidden text-sm font-light sm:inline-block">
+          Buy me a coffee
+        </span>
+      </Button>
 
-            <div className="flex flex-col items-center justify-center space-y-2 text-center w-full px-4 pb-4">
-              <div className="h-px w-1/2 bg-white/10 my-2"></div>
-              <p className="text-sm font-medium text-white/90">TRAN VAN KHOI</p>
-              <div className="bg-white/5 border border-white/10 rounded-md px-4 py-2 mt-1">
-                <p className="text-lg font-mono text-yellow-500 tracking-wider">
-                  0285 3220 901
+      {isOpen && (
+        <div
+          className={cn(
+            "animate-overlay-fade fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4",
+            performanceMode === "immersive" && "backdrop-blur-sm",
+          )}
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            className="animate-modal-enter max-h-[90vh] w-[95vw] max-w-xl overflow-y-auto rounded-2xl border border-white/10 bg-neutral-900 text-white"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between p-6">
+              <div className="space-y-3 text-center sm:text-center">
+                <h2 className="text-2xl font-light">Support KT Focus</h2>
+                <p className="text-white/70">
+                  If you enjoy using this app and it helps you stay productive,
+                  consider buying me a coffee to support future development.
                 </p>
               </div>
-              <p className="text-xs text-white/50 pt-2 uppercase tracking-wide">
-                TPBank
-              </p>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center justify-center space-y-6 px-6 pb-6 pt-2">
+              <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-lg">
+                <img
+                  src="/donation.jpg"
+                  alt="Donation QR Code"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full translate-y-[14%] scale-[1.6] object-cover"
+                />
+              </div>
+
+              <div className="flex w-full flex-col items-center justify-center space-y-2 px-4 pb-4 text-center">
+                <div className="my-2 h-px w-1/2 bg-white/10" />
+                <p className="text-sm font-medium text-white/90">
+                  TRAN VAN KHOI
+                </p>
+                <div className="mt-1 rounded-md border border-white/10 bg-white/5 px-4 py-2">
+                  <p className="font-mono text-lg tracking-wider text-yellow-500">
+                    0285 3220 901
+                  </p>
+                </div>
+                <p className="pt-2 text-xs uppercase tracking-wide text-white/50">
+                  TPBank
+                </p>
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,13 +4,14 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
+  publicDir: "public",
   plugins: [
-    devtools(),
+    ...(command === "serve" ? [devtools()] : []),
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
     viteReact(),
   ],
-});
+}));
 
 export default config;

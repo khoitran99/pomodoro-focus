@@ -1,23 +1,33 @@
+import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AnimatePresence } from "framer-motion";
 import { usePomodoro } from "@/hooks/usePomodoro";
+import { useEffectivePerformanceMode } from "@/hooks/useEffectivePerformanceMode";
 import { SetupScreen } from "@/components/SetupScreen";
 import { TimerScreen } from "@/components/TimerScreen";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { AudioPlayer } from "@/components/AudioPlayer";
-import { DonationPopup } from "@/components/DonationPopup";
 import { FullscreenButton } from "@/components/FullscreenButton";
+import { SessionNotifications } from "@/components/SessionNotifications";
 
 export const Route = createFileRoute("/")({
   component: App,
 });
+
+const LazyDonationPopup = lazy(() =>
+  import("@/components/DonationPopup").then((module) => ({
+    default: module.DonationPopup,
+  })),
+);
 
 function App() {
   const {
     config,
     setConfig,
     phase,
-    timeLeft,
+    phaseEndsAt,
+    phaseStartedAt,
+    phaseDurationSeconds,
+    remainingSeconds,
     currentIteration,
     isRunning,
     isWaitingForAudio,
@@ -29,52 +39,65 @@ function App() {
     skipRest,
   } = usePomodoro();
 
+  const effectivePerformanceMode = useEffectivePerformanceMode("auto");
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-white font-sans antialiased selection:bg-white/20">
-      <AnimatedBackground theme={config.theme} />
+      <AnimatedBackground
+        theme={config.theme}
+        performanceMode={effectivePerformanceMode}
+      />
 
-      {/* Main Content Area */}
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-        <AnimatePresence mode="wait">
-          {phase === "setup" ? (
-            <SetupScreen
-              key="setup"
-              initialConfig={config}
-              onStart={startSession}
-              onThemeChange={(theme) => setConfig({ ...config, theme })}
-            />
-          ) : (
-            <TimerScreen
-              key="timer"
-              config={config}
-              phase={phase}
-              timeLeft={timeLeft}
-              isRunning={isRunning}
-              isWaitingForAudio={isWaitingForAudio}
-              currentIteration={currentIteration}
-              onPauseResume={pauseResume}
-              onStop={stopSession}
-              onReset={resetSession}
-              onSkipRest={skipRest}
-            />
-          )}
-        </AnimatePresence>
+        {phase === "setup" ? (
+          <SetupScreen
+            initialConfig={config}
+            effectivePerformanceMode={effectivePerformanceMode}
+            onStart={startSession}
+            onConfigChange={setConfig}
+          />
+        ) : (
+          <TimerScreen
+            config={config}
+            currentIteration={currentIteration}
+            isRunning={isRunning}
+            isWaitingForAudio={isWaitingForAudio}
+            phase={phase}
+            phaseDurationSeconds={phaseDurationSeconds}
+            phaseEndsAt={phaseEndsAt}
+            performanceMode={effectivePerformanceMode}
+            remainingSeconds={remainingSeconds}
+            onPauseResume={pauseResume}
+            onReset={resetSession}
+            onSkipRest={skipRest}
+            onStop={stopSession}
+          />
+        )}
       </main>
 
-      {/* Persistent Audio Controls */}
       <AudioPlayer
         phase={phase}
         isRunning={isRunning}
+        performanceMode={effectivePerformanceMode}
         setAudioLoading={setIsWaitingForAudio}
       />
 
-      {/* Floating Donation Popup */}
-      <DonationPopup />
+      <SessionNotifications
+        phase={phase}
+        phaseDurationSeconds={phaseDurationSeconds}
+        phaseEndsAt={phaseEndsAt}
+        phaseStartedAt={phaseStartedAt}
+        isRunning={isRunning}
+        isWaitingForAudio={isWaitingForAudio}
+      />
 
-      {/* Floating Fullscreen Toggle */}
       <div className="fixed top-6 right-6 z-50">
         <FullscreenButton />
       </div>
+
+      <Suspense fallback={null}>
+        <LazyDonationPopup performanceMode={effectivePerformanceMode} />
+      </Suspense>
     </div>
   );
 }

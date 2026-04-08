@@ -1,48 +1,55 @@
-import { useState, useRef, useEffect } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX, Music, SkipForward, SkipBack } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { motion, AnimatePresence } from "framer-motion";
 import type { Phase } from "@/hooks/usePomodoro";
-import { getAvailableTracks, type AudioTrack } from "@/lib/music";
+import type { EffectivePerformanceMode } from "@/lib/performance";
+import { audioTracks } from "@/lib/music";
+import { cn } from "@/lib/utils";
 
 interface AudioPlayerProps {
   phase: Phase;
   isRunning?: boolean;
+  performanceMode: EffectivePerformanceMode;
   setAudioLoading?: (loading: boolean) => void;
 }
 
-export function AudioPlayer({
+export const AudioPlayer = memo(function AudioPlayer({
   phase,
   isRunning = false,
+  performanceMode,
   setAudioLoading,
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMusicEnabled, setIsMusicEnabled] = useState(true);
   const [volume, setVolume] = useState(0.5);
   const [showVolume, setShowVolume] = useState(false);
-
-  const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isPlayPending = useRef(false);
+  const lastTrackIdRef = useRef<string | null>(null);
 
-  // Load tracks on mount
-  useEffect(() => {
-    const loadedTracks = getAvailableTracks();
-    setTracks(loadedTracks);
-  }, []);
+  const currentTrack = audioTracks[currentTrackIndex];
+  const shouldLoadTrack = isMusicEnabled && phase === "work" && !!currentTrack;
+  const shouldPlay = shouldLoadTrack && isRunning;
+  const volumePercent = Math.round(volume * 100);
+  const statusLabel = !isMusicEnabled
+    ? "Off"
+    : shouldPlay
+      ? isPlaying
+        ? "Live"
+        : "Loading"
+      : "Idle";
 
-  const currentTrack = tracks[currentTrackIndex];
-
-  // Auto-hide volume after 3 seconds of inactivity
   useEffect(() => {
     if (showVolume) {
-      const timer = setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         setShowVolume(false);
       }, 3000);
-      return () => clearTimeout(timer);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
   }, [showVolume, volume]);
 
@@ -52,217 +59,256 @@ export function AudioPlayer({
     }
   }, [volume]);
 
-  // Handle Play/Pause logic based on Phase/IsRunning state
   useEffect(() => {
-    if (!audioRef.current || tracks.length === 0) return;
+    const audioElement = audioRef.current;
 
-    const shouldPlay = isMusicEnabled && phase === "work" && isRunning;
-
-    if (shouldPlay) {
-      if (!isPlaying && !isPlayPending.current) {
-        isPlayPending.current = true;
-        setAudioLoading?.(true);
-        audioRef.current
-          .play()
-          .then(() => {
-            setIsPlaying(true);
-            isPlayPending.current = false;
-            setAudioLoading?.(false);
-          })
-          .catch((e) => {
-            console.error("Auto-play blocked", e);
-            isPlayPending.current = false;
-            setAudioLoading?.(false);
-            setIsPlaying(false);
-          });
-      }
-    } else {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      }
+    if (!audioElement || !currentTrack) {
+      return;
     }
-  }, [
-    phase,
-    isRunning,
-    isMusicEnabled,
-    isPlaying,
-    setAudioLoading,
-    currentTrackIndex,
-    tracks.length,
-  ]);
 
-  const togglePlay = () => {
-    const newEnabledState = !isMusicEnabled;
-    setIsMusicEnabled(newEnabledState);
+    const trackChanged = lastTrackIdRef.current !== currentTrack.id;
+    lastTrackIdRef.current = currentTrack.id;
 
-    if (tracks.length === 0) return;
+    if (!shouldPlay) {
+      if (!audioElement.paused) {
+        audioElement.pause();
+      }
 
-    if (newEnabledState && phase === "work" && isRunning) {
-      isPlayPending.current = true;
-      setAudioLoading?.(true);
-      audioRef.current
-        ?.play()
-        .then(() => {
-          setIsPlaying(true);
-          isPlayPending.current = false;
-          setAudioLoading?.(false);
-        })
-        .catch((e) => {
-          console.error(e);
-          isPlayPending.current = false;
-          setAudioLoading?.(false);
-        });
-    } else if (!newEnabledState) {
-      audioRef.current?.pause();
+      isPlayPending.current = false;
       setIsPlaying(false);
-      if (isPlayPending.current) {
+      setAudioLoading?.(false);
+      return;
+    }
+
+    if (isPlayPending.current || (!trackChanged && isPlaying)) {
+      return;
+    }
+
+    isPlayPending.current = true;
+    setAudioLoading?.(true);
+
+    void audioElement
+      .play()
+      .then(() => {
         isPlayPending.current = false;
         setAudioLoading?.(false);
-      }
+        setIsPlaying(true);
+      })
+      .catch((error) => {
+        console.error("Auto-play blocked", error);
+        isPlayPending.current = false;
+        setAudioLoading?.(false);
+        setIsPlaying(false);
+      });
+  }, [currentTrack, isPlaying, setAudioLoading, shouldPlay]);
+
+  const togglePlay = () => {
+    const nextEnabledState = !isMusicEnabled;
+    setIsMusicEnabled(nextEnabledState);
+
+    if (!nextEnabledState) {
+      audioRef.current?.pause();
+      isPlayPending.current = false;
+      setIsPlaying(false);
+      setAudioLoading?.(false);
     }
   };
 
   const skipForward = () => {
-    if (tracks.length === 0) return;
-    const nextIndex = (currentTrackIndex + 1) % tracks.length;
-    setCurrentTrackIndex(nextIndex);
-    // Audio will auto-play because src changes and we have a useEffect handling isPlaying
+    if (audioTracks.length === 0) {
+      return;
+    }
+
+    setCurrentTrackIndex((previousIndex) => (previousIndex + 1) % audioTracks.length);
   };
 
   const skipBackward = () => {
-    if (tracks.length === 0) return;
-    const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-    setCurrentTrackIndex(prevIndex);
+    if (audioTracks.length === 0) {
+      return;
+    }
+
+    setCurrentTrackIndex(
+      (previousIndex) =>
+        (previousIndex - 1 + audioTracks.length) % audioTracks.length,
+    );
   };
 
-  const handleEnded = () => {
-    skipForward();
-  };
-
-  // If there are no tracks in the public/music folder, we show a helpful message
-  if (tracks.length === 0) {
+  if (audioTracks.length === 0) {
     return (
       <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
-        <div className="bg-black/80 text-white/80 px-4 py-2 rounded-full text-xs border border-white/10 backdrop-blur-md">
-          Drop audio files in{" "}
-          <code className="text-[10px] bg-white/20 px-1 rounded">
-            public/music
-          </code>
+        <div className="rounded-full border border-white/10 bg-black/80 px-4 py-2 text-xs text-white/80">
+          Audio tracks are currently unavailable.
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+    <div className="fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:right-6 sm:bottom-6">
       <audio
         ref={audioRef}
-        src={currentTrack?.src}
-        onEnded={handleEnded}
-        // Auto-play when src changes IF it was already playing
-        autoPlay={isPlaying}
-        preload="auto"
+        src={shouldLoadTrack ? currentTrack?.src : undefined}
+        onEnded={skipForward}
+        preload={shouldLoadTrack ? "metadata" : "none"}
       />
 
-      <AnimatePresence>
-        {isPlaying && currentTrack && !showVolume && (
-          <motion.div
-            initial={{ opacity: 0, x: 20, width: 0 }}
-            animate={{ opacity: 1, x: 0, width: "auto" }}
-            exit={{ opacity: 0, x: 20, width: 0 }}
-            className="overflow-hidden bg-black/60 rounded-full px-4 py-2 flex items-center gap-2 border border-white/10 text-white/80 text-sm font-light whitespace-nowrap backdrop-blur-md shadow-2xl"
+      <div
+        className={cn(
+          "relative w-full min-w-0 overflow-hidden rounded-[1.65rem] border px-3 py-2.5 sm:w-[min(620px,calc(100vw-3rem))] sm:px-4 sm:py-3",
+          performanceMode === "immersive"
+            ? "border-white/12 bg-black/42 shadow-[0_22px_54px_rgba(0,0,0,0.24)] backdrop-blur-xl"
+            : "border-white/12 bg-black/62 shadow-[0_18px_36px_rgba(0,0,0,0.24)]",
+        )}
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-90"
+          style={{
+            background:
+              "radial-gradient(circle at top left, rgba(103,232,249,0.18), transparent 42%), radial-gradient(circle at bottom right, rgba(253,224,71,0.16), transparent 38%), linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02))",
+          }}
+        />
+
+        {showVolume && (
+          <div
+            className={cn(
+              "absolute right-3 bottom-[calc(100%+0.55rem)] z-10 w-44 overflow-hidden rounded-[1.45rem] border px-4 py-3",
+              performanceMode === "immersive"
+                ? "border-white/12 bg-black/48 shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl"
+                : "border-white/12 bg-black/68 shadow-[0_18px_36px_rgba(0,0,0,0.24)]",
+            )}
           >
-            <div className="flex items-center gap-0.5 h-3 mr-1">
-              <motion.div
-                animate={{ height: [4, 12, 4] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-                className="w-0.5 bg-white rounded-full"
-              />
-              <motion.div
-                animate={{ height: [8, 4, 10, 4] }}
-                transition={{ duration: 0.9, repeat: Infinity, delay: 0.2 }}
-                className="w-0.5 bg-white rounded-full"
-              />
-              <motion.div
-                animate={{ height: [4, 10, 6, 4] }}
-                transition={{ duration: 0.7, repeat: Infinity, delay: 0.4 }}
-                className="w-0.5 bg-white rounded-full"
+            <div className="relative">
+              <div className="flex items-center justify-between text-[0.65rem] font-medium uppercase tracking-[0.28em] text-white/50">
+                <span>Volume</span>
+                <span>{volumePercent}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={(event) => setVolume(Number(event.target.value))}
+                className="range-track mt-3 w-full cursor-pointer appearance-none rounded-full bg-white/12 accent-white"
+                aria-label="Adjust music volume"
               />
             </div>
-            <span className="truncate max-w-48 font-medium">
-              {currentTrack.name}
-            </span>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {showVolume && (
-          <motion.div
-            initial={{ opacity: 0, x: 20, width: 0 }}
-            animate={{ opacity: 1, x: 0, width: 100 }}
-            exit={{ opacity: 0, x: 20, width: 0 }}
-            className="overflow-hidden bg-black/60 rounded-full px-3 py-2 flex items-center border border-white/10 backdrop-blur-md shadow-2xl"
-          >
-            <Slider
-              value={[volume]}
-              max={1}
-              step={0.01}
-              onValueChange={([val]) => setVolume(val)}
-              className="w-full"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <div className="relative flex items-center gap-3 sm:gap-4">
+          {currentTrack && (
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+              <div
+                className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] border",
+                  isMusicEnabled
+                    ? "border-white/14 bg-white/14 text-white shadow-[0_10px_24px_rgba(255,255,255,0.08)]"
+                    : "border-white/10 bg-white/8 text-white/45",
+                )}
+              >
+                {isMusicEnabled ? (
+                  <Music className="h-5 w-5" />
+                ) : (
+                  <VolumeX className="h-5 w-5" />
+                )}
+              </div>
 
-      <div className="flex items-center bg-black/60 rounded-full border border-white/10 p-1 shadow-2xl backdrop-blur-md gap-0.5">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={skipBackward}
-          className="rounded-full text-white/70 hover:text-white hover:bg-white/10 w-8 h-8"
-        >
-          <SkipBack className="w-4 h-4 fill-current" />
-        </Button>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-[0.58rem] font-medium uppercase tracking-[0.24em] text-white/44">
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full transition-colors duration-300",
+                      shouldPlay && isPlaying
+                        ? "bg-emerald-300 shadow-[0_0_12px_rgba(134,239,172,0.8)]"
+                        : "bg-white/28",
+                    )}
+                  />
+                  <span>{statusLabel}</span>
+                </div>
+                <div
+                  className="mt-0.5 truncate text-sm font-semibold text-white sm:text-[0.98rem]"
+                  title={currentTrack.name}
+                >
+                  {currentTrack.name}
+                </div>
+              </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={togglePlay}
-          className={`rounded-full transition-colors w-10 h-10 ${
-            isMusicEnabled
-              ? "text-black bg-white hover:bg-white/90"
-              : "text-white/70 hover:text-white hover:bg-white/10"
-          }`}
-        >
-          <Music className={`w-5 h-5 ${isPlaying ? "animate-pulse" : ""}`} />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={skipForward}
-          className="rounded-full text-white/70 hover:text-white hover:bg-white/10 w-8 h-8"
-        >
-          <SkipForward className="w-4 h-4 fill-current" />
-        </Button>
-
-        <div className="w-px h-4 bg-white/20 mx-1"></div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowVolume(!showVolume)}
-          className="rounded-full text-white/70 hover:text-white hover:bg-white/10 w-8 h-8"
-        >
-          {volume === 0 ? (
-            <VolumeX className="w-4 h-4" />
-          ) : (
-            <Volume2 className="w-4 h-4" />
+              <div className="ml-1 hidden shrink-0 items-end gap-1 self-stretch sm:flex">
+                {[14, 22, 17].map((height, index) => (
+                  <span
+                    key={height}
+                    className={cn(
+                      "audio-bar w-1 rounded-full bg-white/75",
+                      shouldPlay && isPlaying ? "opacity-95" : "opacity-30",
+                    )}
+                    style={{
+                      height,
+                      animationDelay: `-${index * 0.18}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           )}
-        </Button>
+
+          <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+            <div className="mx-0.5 hidden h-7 w-px bg-white/10 sm:block" />
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Previous track"
+                onClick={skipBackward}
+                className="h-9 w-9 rounded-[0.95rem] text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                <SkipBack className="h-4 w-4 fill-current" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={isMusicEnabled ? "Disable music" : "Enable music"}
+                onClick={togglePlay}
+                className={cn(
+                  "animate-soft-float h-10 w-10 rounded-[1rem] border transition-all duration-300",
+                  isMusicEnabled
+                    ? "border-white/25 bg-white text-black shadow-[0_10px_28px_rgba(255,255,255,0.22)] hover:bg-white/92"
+                    : "border-white/10 bg-white/[0.08] text-white/70 hover:bg-white/[0.14] hover:text-white",
+                )}
+              >
+                <Music className="h-5 w-5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Next track"
+                onClick={skipForward}
+                className="h-9 w-9 rounded-[0.95rem] text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                <SkipForward className="h-4 w-4 fill-current" />
+              </Button>
+
+              <div className="mx-0.5 h-5 w-px bg-white/12" />
+
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Toggle volume controls"
+                onClick={() => setShowVolume((previous) => !previous)}
+                className="h-9 w-9 rounded-[0.95rem] text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                {volume === 0 ? (
+                  <VolumeX className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+});

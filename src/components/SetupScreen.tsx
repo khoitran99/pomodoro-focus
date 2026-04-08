@@ -1,303 +1,575 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Palette,
   ChevronDown,
   ChevronUp,
-  Brain,
-  Zap,
   Coffee,
   Settings2,
   Play,
 } from "lucide-react";
-import { ThemeModal } from "./ThemeModal";
 import { themes } from "@/lib/themes";
+import type { EffectivePerformanceMode } from "@/lib/performance";
 import type { PomodoroConfig } from "@/hooks/usePomodoro";
 import { cn } from "@/lib/utils";
 
 const PRESETS = [
   { id: "pomodoro", name: "Pomodoro", work: 25, rest: 5, icon: Coffee },
-  { id: "deepwork", name: "Deep Work", work: 90, rest: 15, icon: Brain },
-  { id: "sprint", name: "Short Sprint", work: 15, rest: 3, icon: Zap },
   { id: "custom", name: "Custom", work: 0, rest: 0, icon: Settings2 },
 ] as const;
+
 type PresetId = (typeof PRESETS)[number]["id"];
 
 interface SetupScreenProps {
   initialConfig: PomodoroConfig;
+  effectivePerformanceMode: EffectivePerformanceMode;
   onStart: (config: PomodoroConfig) => void;
-  onThemeChange?: (theme: string) => void;
+  onConfigChange?: (config: PomodoroConfig) => void;
 }
+
+const LazyThemeModal = lazy(() =>
+  import("./ThemeModal").then((module) => ({
+    default: module.ThemeModal,
+  })),
+);
 
 export function SetupScreen({
   initialConfig,
+  effectivePerformanceMode,
   onStart,
-  onThemeChange,
+  onConfigChange,
 }: SetupScreenProps) {
   const [config, setConfig] = useState<PomodoroConfig>(initialConfig);
-  const [isInfinite, setIsInfinite] = useState(initialConfig.iterations === 0);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [lastFiniteIterations, setLastFiniteIterations] = useState(
+    initialConfig.iterations > 0 ? initialConfig.iterations : 4,
+  );
+  const [activePreset, setActivePreset] = useState<PresetId>(
+    getPresetId(initialConfig),
+  );
 
-  // Custom mode triggers when users adjust sliders manually or select 'Custom' directly.
-  const [activePreset, setActivePreset] = useState<PresetId>("pomodoro");
+  useEffect(() => {
+    setConfig(initialConfig);
+
+    if (initialConfig.iterations > 0) {
+      setLastFiniteIterations(initialConfig.iterations);
+    }
+
+    setActivePreset((currentPreset) => {
+      const inferredPreset = getPresetId(initialConfig);
+
+      if (currentPreset === "custom" && inferredPreset === "pomodoro") {
+        return currentPreset;
+      }
+
+      return inferredPreset;
+    });
+  }, [initialConfig]);
+
+  const isInfinite = config.iterations === 0;
+  const currentThemeName =
+    themes.find((theme) => theme.id === config.theme)?.name || "Theme";
+
+  const commitConfig = (nextConfig: PomodoroConfig) => {
+    setConfig(nextConfig);
+    onConfigChange?.(nextConfig);
+  };
 
   const handlePresetClick = (preset: (typeof PRESETS)[number]) => {
     setActivePreset(preset.id);
-    if (preset.id !== "custom") {
-      setConfig({
+
+    if (preset.id === "pomodoro") {
+      commitConfig({
         ...config,
         workDuration: preset.work,
         restDuration: preset.rest,
+        sessionName: syncSessionName(config.sessionName, preset.id),
       });
+      return;
     }
-  };
 
-  const handleStart = () => {
-    onStart({
+    commitConfig({
       ...config,
-      iterations: isInfinite ? 0 : config.iterations,
+      sessionName: syncSessionName(config.sessionName, preset.id),
     });
   };
 
+  const handleStart = () => {
+    const sessionConfig = {
+      ...config,
+      iterations: isInfinite ? 0 : Math.max(1, config.iterations),
+    };
+
+    commitConfig(sessionConfig);
+    onStart(sessionConfig);
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1.05 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full max-w-md mx-auto z-10"
-    >
-      <Card className="bg-black/20 dark:bg-black/30 backdrop-blur-3xl border-white/10 shadow-2xl text-white overflow-hidden rounded-[2rem]">
-        <CardContent className="space-y-6 px-8">
-          {/* Preset Mode Tiles */}
-          <div className="grid grid-cols-2 gap-3">
-            {PRESETS.map((preset) => {
-              const isSelected = activePreset === preset.id;
-              const Icon = preset.icon;
-              return (
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  key={preset.id}
-                  onClick={() => handlePresetClick(preset)}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-2xl border transition-colors duration-200",
-                    isSelected
-                      ? "bg-white text-black border-transparent shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)]"
-                      : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/10 hover:text-white",
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "w-6 h-6 mb-2 transition-colors",
-                      isSelected
-                        ? "text-black"
-                        : "text-white/50 group-hover:text-white",
-                    )}
-                  />
-                  <span className="text-sm font-semibold tracking-wide">
-                    {preset.name}
-                  </span>
-                  {preset.id !== "custom" && (
-                    <span
-                      className={cn(
-                        "text-xs mt-1 font-medium",
-                        isSelected ? "text-black/60" : "text-white/40",
-                      )}
-                    >
-                      {preset.work}m / {preset.rest}m
-                    </span>
-                  )}
-                  {preset.id === "custom" && (
-                    <span
-                      className={cn(
-                        "text-xs mt-1 font-medium",
-                        isSelected ? "text-black/60" : "text-white/40",
-                      )}
-                    >
-                      Set timers
-                    </span>
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-
-          <motion.div
-            initial={false}
-            animate={{
-              height: activePreset === "custom" ? "auto" : 0,
-              opacity: activePreset === "custom" ? 1 : 0,
-            }}
-            className="overflow-hidden"
-          >
-            {/* Custom Control Sliders */}
-            <div className="space-y-6 pt-2 pb-2">
-              <div className="space-y-3">
-                <div className="flex justify-between items-end mb-1">
-                  <Label className="text-white/60 text-sm font-medium uppercase tracking-wider">
-                    Deep Work
-                  </Label>
-                  <div className="text-2xl font-light tabular-nums tracking-tighter">
-                    {config.workDuration}
-                    <span className="text-sm text-white/40 ml-1 font-normal">
-                      m
-                    </span>
+    <div className="animate-screen-enter z-10 mx-auto w-full max-w-5xl">
+      <Card
+        className={cn(
+          "overflow-hidden rounded-[2rem] border text-white transition-shadow duration-500",
+          effectivePerformanceMode === "immersive"
+            ? "border-white/16 bg-black/26 shadow-[0_30px_90px_rgba(0,0,0,0.24)] backdrop-blur-2xl"
+            : "border-white/16 bg-black/46 shadow-[0_26px_70px_rgba(0,0,0,0.26)] backdrop-blur-xl",
+        )}
+      >
+        <div className="grid md:grid-cols-[minmax(0,1.14fr)_minmax(320px,0.86fr)]">
+          <section className="border-b border-white/8 px-5 py-5 md:border-r md:border-b-0 md:px-7 md:py-6">
+            <div className="flex h-full flex-col justify-between gap-5">
+              <div className="space-y-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-[0.68rem] font-medium uppercase tracking-[0.32em] text-white/50">
+                      Classic Focus
+                    </p>
+                    <h1 className="text-[2.3rem] font-light tracking-tight text-white sm:text-[2.7rem]">
+                      {activePreset === "pomodoro"
+                        ? "Pomodoro."
+                        : "Custom rhythm."}
+                    </h1>
+                    <p className="max-w-xl text-sm leading-6 text-white/65">
+                      {activePreset === "pomodoro"
+                        ? "The traditional 25 minute focus block with a clean 5 minute reset, designed to feel calm and ready immediately."
+                        : "Tune your own focus and rest balance without losing the same elegant start experience."}
+                    </p>
                   </div>
-                </div>
-                <Slider
-                  value={[config.workDuration]}
-                  onValueChange={([val]) => {
-                    setActivePreset("custom"); // Ensure custom is active if dragging
-                    setConfig({ ...config, workDuration: val });
-                  }}
-                  max={120}
-                  min={5}
-                  step={5}
-                />
-              </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-end mb-1">
-                  <Label className="text-white/60 text-sm font-medium uppercase tracking-wider">
-                    Rest
-                  </Label>
-                  <div className="text-2xl font-light tabular-nums tracking-tighter">
-                    {config.restDuration}
-                    <span className="text-sm text-white/40 ml-1 font-normal">
-                      m
-                    </span>
-                  </div>
-                </div>
-                <Slider
-                  value={[config.restDuration]}
-                  onValueChange={([val]) => {
-                    setActivePreset("custom");
-                    setConfig({ ...config, restDuration: val });
-                  }}
-                  max={45}
-                  min={1}
-                  step={1}
-                />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Secondary Controls Togggle */}
-          <div className="pt-2">
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center justify-center w-full py-2 gap-2 text-xs font-medium text-white/40 hover:text-white/70 transition-colors uppercase tracking-widest"
-            >
-              Advanced Settings
-              {showAdvanced ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
-
-            <motion.div
-              initial={false}
-              animate={{
-                height: showAdvanced ? "auto" : 0,
-                opacity: showAdvanced ? 1 : 0,
-              }}
-              className="overflow-hidden"
-            >
-              <div className="space-y-4 pt-4 mt-2 p-5 bg-white/5 border border-white/5 rounded-2xl">
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="infinite-mode"
-                    className="flex flex-col gap-1"
-                  >
-                    <span className="font-medium text-white/90">
-                      Infinite Mode
-                    </span>
-                    <span className="font-normal text-xs text-white/50">
-                      Repeat sessions forever
-                    </span>
-                  </Label>
-                  <Switch
-                    id="infinite-mode"
-                    checked={isInfinite}
-                    onCheckedChange={setIsInfinite}
-                  />
-                </div>
-
-                {!isInfinite && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="pt-2 space-y-3"
-                  >
-                    <div className="flex justify-between items-end">
-                      <Label className="text-white/90">Iterations</Label>
-                      <span className="text-lg font-medium tabular-nums">
-                        {config.iterations}
-                      </span>
-                    </div>
-                    <Slider
-                      value={[config.iterations || 1]}
-                      onValueChange={([val]) =>
-                        setConfig({ ...config, iterations: val })
-                      }
-                      max={20}
-                      min={1}
-                      step={1}
-                      className="py-1"
-                    />
-                  </motion.div>
-                )}
-
-                <div className="h-px bg-white/5 w-full my-2 rounded-full" />
-
-                <div className="flex items-center justify-between">
-                  <Label className="text-white/90">Theme</Label>
                   <button
+                    type="button"
                     onClick={() => setIsThemeModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/20 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white/20"
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/18 focus:outline-none focus:ring-2 focus:ring-white/20"
                   >
-                    <Palette className="w-3.5 h-3.5 text-white/70" />
-                    <span>
-                      {themes.find((t) => t.id === config.theme)?.name ||
-                        "Auto"}
-                    </span>
+                    <Palette className="h-3.5 w-3.5 text-white/70" />
+                    <span>{currentThemeName}</span>
                   </button>
                 </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  <StatTile label="Focus" value={`${config.workDuration}m`} />
+                  <StatTile label="Break" value={`${config.restDuration}m`} />
+                  <StatTile
+                    label="Rounds"
+                    value={isInfinite ? "∞" : `${config.iterations}x`}
+                  />
+                </div>
+
+                <div className="rounded-[1.65rem] border border-white/10 bg-white/[0.08] p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <label
+                        htmlFor="session-name"
+                        className="text-[0.72rem] font-medium uppercase tracking-[0.28em] text-white/50"
+                      >
+                        Session Name
+                      </label>
+                      <Input
+                        id="session-name"
+                        type="text"
+                        autoComplete="off"
+                        maxLength={48}
+                        placeholder={
+                          activePreset === "pomodoro"
+                            ? "Pomodoro"
+                            : "Design Review"
+                        }
+                        value={config.sessionName}
+                        onChange={(event) =>
+                          commitConfig({
+                            ...config,
+                            sessionName: event.target.value,
+                          })
+                        }
+                        className="h-12 rounded-2xl border-white/12 bg-black/18 px-4 text-base text-white placeholder:text-white/35 focus-visible:border-white/30 focus-visible:ring-white/18"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleStart}
+                      className={cn(
+                        "h-12 shrink-0 gap-3 rounded-2xl px-6 text-base font-medium text-black transition-all duration-300 hover:-translate-y-0.5 sm:min-w-[185px]",
+                        effectivePerformanceMode === "immersive"
+                          ? "bg-white shadow-[0_0_38px_-12px_rgba(255,255,255,0.3)] hover:bg-white/92"
+                          : "bg-white hover:bg-white/92",
+                      )}
+                    >
+                      <Play className="h-5 w-5 fill-current" />
+                      <span>Start Session</span>
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex-col gap-4 pb-8 px-8 pt-6">
-          <Button
-            onClick={handleStart}
-            className="w-full text-lg h-14 rounded-2xl bg-white text-black hover:bg-white/90 hover:scale-[1.02] shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] transition-all duration-200 active:scale-95 font-medium"
-          >
-            <Play className="w-6 h-6 fill-current" />
-          </Button>
-          <div className="text-xs text-white/30 font-light text-center tracking-wide">
-            Made by Khoi Tran
-          </div>
-        </CardFooter>
+
+              <div className="text-xs font-light tracking-wide text-white/34">
+                Made by Khoi Tran
+              </div>
+            </div>
+          </section>
+
+          <section className="px-5 py-5 md:px-6 md:py-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2.5">
+                {PRESETS.map((preset) => {
+                  const isSelected = activePreset === preset.id;
+                  const Icon = preset.icon;
+
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handlePresetClick(preset)}
+                      className={cn(
+                        "rounded-[1.4rem] border p-3 text-left transition-all duration-300 hover:-translate-y-0.5",
+                        isSelected
+                          ? "border-transparent bg-white text-black shadow-[0_16px_34px_-14px_rgba(255,255,255,0.42)]"
+                          : "border-white/10 bg-white/[0.06] text-white/82 hover:border-white/16 hover:bg-white/[0.1]",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold tracking-wide">
+                            {preset.name}
+                          </div>
+                          <p
+                            className={cn(
+                              "mt-1 text-xs leading-5",
+                              isSelected ? "text-black/60" : "text-white/50",
+                            )}
+                          >
+                            {preset.id === "pomodoro"
+                              ? "Traditional 25 / 5"
+                              : "Shape your own timings"}
+                          </p>
+                        </div>
+                        <div
+                          className={cn(
+                            "rounded-2xl border p-2.5",
+                            isSelected
+                              ? "border-black/8 bg-black/[0.06]"
+                              : "border-white/10 bg-white/[0.08]",
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "h-4.5 w-4.5",
+                              isSelected ? "text-black" : "text-white/70",
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.07] p-4">
+                {activePreset === "pomodoro" ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="text-sm font-semibold uppercase tracking-[0.2em] text-white/78">
+                          Traditional Flow
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-white/58">
+                          Start immediately with the classic cadence. Open
+                          advanced settings only if you want infinite mode or a
+                          different round count.
+                        </p>
+                      </div>
+                      <div className="min-w-[168px] rounded-[1.3rem] border border-white/10 bg-black/16 px-4 py-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-[0.65rem] font-medium uppercase tracking-[0.28em] text-white/44">
+                              Focus
+                            </div>
+                            <div className="mt-1 text-3xl font-light tracking-tighter text-white tabular-nums">
+                              25
+                              <span className="ml-1 text-sm text-white/44">
+                                min
+                              </span>
+                            </div>
+                          </div>
+                          <div className="border-l border-white/8 pl-3">
+                            <div className="text-[0.65rem] font-medium uppercase tracking-[0.28em] text-white/44">
+                              Reset
+                            </div>
+                            <div className="mt-1 text-3xl font-light tracking-tighter text-white tabular-nums">
+                              5
+                              <span className="ml-1 text-sm text-white/44">
+                                min
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm font-semibold uppercase tracking-[0.2em] text-white/78">
+                        Custom Timers
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-white/58">
+                        Compact controls for shaping your own focus rhythm.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <RangeField
+                        label="Focus"
+                        max={120}
+                        min={5}
+                        step={5}
+                        suffix="m"
+                        value={config.workDuration}
+                        onChange={(value) => {
+                          setActivePreset("custom");
+                          commitConfig({
+                            ...config,
+                            workDuration: value,
+                            sessionName: syncSessionName(
+                              config.sessionName,
+                              "custom",
+                            ),
+                          });
+                        }}
+                      />
+
+                      <RangeField
+                        label="Rest"
+                        max={45}
+                        min={1}
+                        step={1}
+                        suffix="m"
+                        value={config.restDuration}
+                        onChange={(value) => {
+                          setActivePreset("custom");
+                          commitConfig({
+                            ...config,
+                            restDuration: value,
+                            sessionName: syncSessionName(
+                              config.sessionName,
+                              "custom",
+                            ),
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex w-full items-center justify-center gap-2 py-1 text-[0.72rem] font-medium uppercase tracking-[0.28em] text-white/42 transition-colors hover:text-white/72"
+                >
+                  Advanced Settings
+                  {showAdvanced ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+
+                <div
+                  className={cn(
+                    "grid overflow-hidden transition-all duration-300",
+                    showAdvanced
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0",
+                  )}
+                >
+                  <div className="mt-1 space-y-3 overflow-hidden rounded-[1.35rem] border border-white/8 bg-black/18 p-3.5 backdrop-blur-sm">
+                    <div className="flex items-center justify-between gap-4 rounded-[1.15rem] border border-white/8 bg-white/[0.05] px-3.5 py-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-white/90">
+                          Infinite Mode
+                        </div>
+                        <p className="mt-1 text-xs text-white/52">
+                          Repeat sessions forever
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isInfinite}
+                        aria-label="Toggle infinite mode"
+                        onClick={() => {
+                          const nextInfinite = !isInfinite;
+
+                          if (nextInfinite) {
+                            if (config.iterations > 0) {
+                              setLastFiniteIterations(config.iterations);
+                            }
+
+                            commitConfig({
+                              ...config,
+                              iterations: 0,
+                            });
+                            return;
+                          }
+
+                          commitConfig({
+                            ...config,
+                            iterations: Math.max(1, lastFiniteIterations),
+                          });
+                        }}
+                        className={cn(
+                          "inline-flex h-8 w-14 shrink-0 items-center rounded-full border p-1 transition-all duration-300",
+                          isInfinite
+                            ? "border-white/20 bg-white shadow-[0_0_24px_rgba(255,255,255,0.22)]"
+                            : "border-white/20 bg-white/12",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "block h-6 w-6 rounded-full shadow-[0_6px_18px_rgba(0,0,0,0.35)] transition-transform duration-300",
+                            isInfinite
+                              ? "translate-x-6 bg-black"
+                              : "translate-x-0 bg-white",
+                          )}
+                        />
+                      </button>
+                    </div>
+
+                    {!isInfinite && (
+                      <div className="rounded-[1.15rem] border border-white/8 bg-white/[0.05] px-3.5 py-3">
+                        <RangeField
+                          label="Iterations"
+                          min={1}
+                          max={20}
+                          step={1}
+                          value={config.iterations || 1}
+                          onChange={(value) => {
+                            setLastFiniteIterations(value);
+                            commitConfig({ ...config, iterations: value });
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
       </Card>
 
-      <ThemeModal
-        isOpen={isThemeModalOpen}
-        onClose={() => setIsThemeModalOpen(false)}
-        currentTheme={config.theme}
-        onSelectTheme={(themeId) => {
-          setConfig({ ...config, theme: themeId });
-          onThemeChange?.(themeId);
-        }}
+      {isThemeModalOpen && (
+        <Suspense fallback={null}>
+          <LazyThemeModal
+            currentTheme={config.theme}
+            isOpen={isThemeModalOpen}
+            onClose={() => setIsThemeModalOpen(false)}
+            onSelectTheme={(themeId) => {
+              commitConfig({ ...config, theme: themeId });
+            }}
+            performanceMode={effectivePerformanceMode}
+          />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+function getDefaultSessionName(presetId: PresetId) {
+  return presetId === "custom" ? "Custom Session" : "Pomodoro";
+}
+
+function syncSessionName(currentName: string, presetId: PresetId) {
+  const trimmedName = currentName.trim();
+
+  if (
+    trimmedName === "" ||
+    trimmedName === getDefaultSessionName("pomodoro") ||
+    trimmedName === getDefaultSessionName("custom")
+  ) {
+    return getDefaultSessionName(presetId);
+  }
+
+  return currentName;
+}
+
+function getPresetId(config: PomodoroConfig): PresetId {
+  const matchingPreset = PRESETS.find(
+    (preset) =>
+      preset.id !== "custom" &&
+      preset.work === config.workDuration &&
+      preset.rest === config.restDuration,
+  );
+
+  return matchingPreset?.id ?? "custom";
+}
+
+interface RangeFieldProps {
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  suffix?: string;
+  onChange: (value: number) => void;
+}
+
+function RangeField({
+  label,
+  min,
+  max,
+  step,
+  value,
+  suffix,
+  onChange,
+}: RangeFieldProps) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end justify-between gap-4">
+        <span className="text-[0.72rem] font-medium uppercase tracking-[0.28em] text-white/55">
+          {label}
+        </span>
+        <div className="text-lg font-light tracking-tighter tabular-nums text-white">
+          {value}
+          {suffix && (
+            <span className="ml-1 text-xs font-normal text-white/40">
+              {suffix}
+            </span>
+          )}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="range-track h-2 w-full cursor-pointer appearance-none rounded-full bg-white/12 accent-white"
       />
-    </motion.div>
+    </div>
+  );
+}
+
+interface StatTileProps {
+  label: string;
+  value: string;
+}
+
+function StatTile({ label, value }: StatTileProps) {
+  return (
+    <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.08] px-3 py-3.5">
+      <div className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-white/46">
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-light tracking-tighter text-white">
+        {value}
+      </div>
+    </div>
   );
 }

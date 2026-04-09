@@ -43,7 +43,7 @@ export function DonationPopup({ performanceMode }: DonationPopupProps) {
           >
             <div className="flex items-start justify-between p-6">
               <div className="space-y-3 text-center sm:text-center">
-                <h2 className="text-2xl font-light">Support KT Focus</h2>
+                <h2 className="text-2xl font-light">Support Pomodoro by KT</h2>
                 <p className="text-white/70">
                   If you enjoy using this app and it helps you stay productive,
                   consider buying me a coffee to support future development.

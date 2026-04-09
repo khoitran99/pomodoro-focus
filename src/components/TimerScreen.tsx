@@ -77,13 +77,13 @@ export function TimerScreen({
 
   useEffect(() => {
     if (phase === "work" || phase === "rest") {
-      document.title = `${formatTime(timeLeft)} - ${sessionLabel} | KT Focus`;
+      document.title = `${formatTime(timeLeft)} - ${sessionLabel} | Pomodoro by KT`;
     } else {
-      document.title = "KT Focus";
+      document.title = "Pomodoro by KT";
     }
 
     return () => {
-      document.title = "KT Focus";
+      document.title = "Pomodoro by KT";
     };
   }, [sessionLabel, timeLeft, phase]);
 

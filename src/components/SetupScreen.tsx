@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Palette, Settings2, Play } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import type { EffectivePerformanceMode } from "@/lib/performance";
 import type { PomodoroConfig } from "@/hooks/usePomodoro";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,8 @@ export function SetupScreen({
 
         <div className="relative space-y-6">
           <div className="space-y-3">
+            <BrandMark />
+
             <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[0.7rem] font-medium uppercase tracking-[0.24em] text-white/58 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
               <span className="h-2 w-2 rounded-full bg-white/70" />
               <span className="truncate">{rhythmBadge}</span>

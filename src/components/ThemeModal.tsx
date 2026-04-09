@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { X, Check } from "lucide-react";
 import { themes } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import type { EffectivePerformanceMode } from "@/lib/performance";
+import type { ThemeAsset } from "@/lib/media";
 
 interface ThemeModalProps {
   isOpen: boolean;
@@ -72,13 +74,7 @@ export function ThemeModal({
                       : "ring-1 ring-white/10 hover:scale-[1.02] hover:ring-white/30",
                   )}
                 >
-                  <img
-                    src={theme.thumbnailSrc || theme.fullSrc}
-                    alt={`${theme.name} preview`}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                  <ThemePreviewImage theme={theme} />
 
                   <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
 
@@ -99,5 +95,28 @@ export function ThemeModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function ThemePreviewImage({ theme }: { theme: ThemeAsset }) {
+  const [imageSrc, setImageSrc] = useState(theme.thumbnailSrc || theme.fullSrc);
+
+  useEffect(() => {
+    setImageSrc(theme.thumbnailSrc || theme.fullSrc);
+  }, [theme.fullSrc, theme.thumbnailSrc]);
+
+  return (
+    <img
+      src={imageSrc}
+      alt={`${theme.name} preview`}
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (imageSrc !== theme.fullSrc) {
+          setImageSrc(theme.fullSrc);
+        }
+      }}
+      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+    />
   );
 }

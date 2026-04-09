@@ -6,6 +6,17 @@ const remoteMediaBaseUrl = (
   .trim()
   .replace(/\/$/, "");
 
+const localBackgroundFiles =
+  typeof __LOCAL_BACKGROUND_FILES__ !== "undefined"
+    ? __LOCAL_BACKGROUND_FILES__
+    : [];
+
+const localThumbnailFiles = new Set(
+  typeof __LOCAL_THUMBNAIL_FILES__ !== "undefined"
+    ? __LOCAL_THUMBNAIL_FILES__
+    : [],
+);
+
 const remoteBackgroundFiles = [
   "anne-roston-zq-yhUkIyuI-unsplash.jpg",
   "clark-tibbs-oqStl2L5oxI-unsplash.jpg",
@@ -182,11 +193,13 @@ export const themes: ThemeAsset[] = hasRemoteMedia
       fullSrc: buildRemoteMediaUrl("background", filename),
       thumbnailSrc: buildRemoteMediaUrl("thumbnails", filename),
     }))
-  : remoteBackgroundFiles.map((filename) => ({
+  : localBackgroundFiles.map((filename) => ({
       id: toThemeId(filename),
       name: cleanDisplayName(filename) || "Background",
       fullSrc: buildLocalMediaUrl("background", filename),
-      thumbnailSrc: buildLocalMediaUrl("thumbnails", filename),
+      thumbnailSrc: localThumbnailFiles.has(filename)
+        ? buildLocalMediaUrl("thumbnails", filename)
+        : buildLocalMediaUrl("background", filename),
     }));
 
 export const imageThemes = themes.reduce<Record<string, string>>(

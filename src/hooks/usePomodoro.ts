@@ -25,7 +25,7 @@ const defaultConfig: PomodoroConfig = {
   sessionName: "Pomodoro",
   workDuration: 25,
   restDuration: 5,
-  iterations: 4,
+  iterations: 0,
   theme: defaultThemeId,
   performanceMode: "auto",
 };

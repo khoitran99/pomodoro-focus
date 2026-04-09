@@ -15,6 +15,14 @@ describe("usePomodoro", () => {
     vi.useRealTimers();
   });
 
+  it("defaults first-time users to classic pomodoro with infinite iterations", () => {
+    const { result } = renderHook(() => usePomodoro());
+
+    expect(result.current.config.workDuration).toBe(25);
+    expect(result.current.config.restDuration).toBe(5);
+    expect(result.current.config.iterations).toBe(0);
+  });
+
   it("transitions from work to rest to complete for a finite session", () => {
     const { result } = renderHook(() => usePomodoro());
 

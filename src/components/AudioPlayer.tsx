@@ -26,12 +26,13 @@ export const AudioPlayer = memo(function AudioPlayer({
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
   const isPlayPending = useRef(false);
   const lastTrackIdRef = useRef<string | null>(null);
 
   const currentTrack = audioTracks[currentTrackIndex];
-  const shouldLoadTrack = isMusicEnabled && phase === "work" && !!currentTrack;
-  const shouldPlay = shouldLoadTrack && isRunning;
+  const shouldLoadTrack = isMusicEnabled && !!currentTrack;
+  const shouldPlay = shouldLoadTrack && phase === "work" && isRunning;
   const volumePercent = Math.round(volume * 100);
   const statusLabel = !isMusicEnabled
     ? "Off"
@@ -58,6 +59,31 @@ export const AudioPlayer = memo(function AudioPlayer({
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    if (!shouldLoadTrack || audioTracks.length < 2) {
+      preloadAudioRef.current = null;
+      return;
+    }
+
+    const nextTrack = audioTracks[(currentTrackIndex + 1) % audioTracks.length];
+
+    if (!nextTrack) {
+      preloadAudioRef.current = null;
+      return;
+    }
+
+    const preloadAudio =
+      preloadAudioRef.current ?? document.createElement("audio");
+
+    preloadAudio.preload = "auto";
+
+    if (preloadAudio.getAttribute("src") !== nextTrack.src) {
+      preloadAudio.src = nextTrack.src;
+    }
+
+    preloadAudioRef.current = preloadAudio;
+  }, [currentTrackIndex, shouldLoadTrack]);
 
   useEffect(() => {
     const audioElement = audioRef.current;
@@ -114,20 +140,26 @@ export const AudioPlayer = memo(function AudioPlayer({
     }
   };
 
-  const skipForward = () => {
+  const selectTrack = (getNextIndex: (previousIndex: number) => number) => {
     if (audioTracks.length === 0) {
       return;
     }
 
-    setCurrentTrackIndex((previousIndex) => (previousIndex + 1) % audioTracks.length);
+    audioRef.current?.pause();
+    isPlayPending.current = false;
+    setIsPlaying(false);
+    setAudioLoading?.(false);
+    setCurrentTrackIndex((previousIndex) => getNextIndex(previousIndex));
+  };
+
+  const skipForward = () => {
+    selectTrack(
+      (previousIndex) => (previousIndex + 1) % audioTracks.length,
+    );
   };
 
   const skipBackward = () => {
-    if (audioTracks.length === 0) {
-      return;
-    }
-
-    setCurrentTrackIndex(
+    selectTrack(
       (previousIndex) =>
         (previousIndex - 1 + audioTracks.length) % audioTracks.length,
     );
@@ -146,10 +178,11 @@ export const AudioPlayer = memo(function AudioPlayer({
   return (
     <div className="fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:right-6 sm:bottom-6">
       <audio
+        key={currentTrack?.id ?? "audio-track"}
         ref={audioRef}
         src={shouldLoadTrack ? currentTrack?.src : undefined}
         onEnded={skipForward}
-        preload={shouldLoadTrack ? "metadata" : "none"}
+        preload={shouldLoadTrack ? "auto" : "none"}
       />
 
       <div
